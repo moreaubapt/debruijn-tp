@@ -13,17 +13,16 @@
 
 """Perform assembly based on debruijn graph."""
 import random
+from random import randint
 import argparse
 import re
 import os
 import sys
+from operator import itemgetter
+random.seed(9001)
+import statistics
 import networkx as nx
 import matplotlib
-from operator import itemgetter
-
-random.seed(9001)
-from random import randint
-import statistics
 
 __author__ = "Moreau Baptiste"
 __copyright__ = "Universite Paris Diderot"
@@ -66,24 +65,23 @@ def get_arguments():
     return parser.parse_args()
 
 
+
 def read_fastq(fastq_file):
     #Read the sequences from a file and assert they are well formed otherwise raise an exception
-    with open(fastq_file, 'r') as inputfile:
-        l1 = inputfile.readline()
-        l2 = inputfile.readline()
-        l3 = inputfile.readline()
-        l4 = inputfile.readline()
-        e = Exception("Wrong file construction")
-        if not bool(re.match('^@',l1)):
-            raise(e)
-        if not bool(re.match('^[ACTG]*$',l2)):
-            raise(e)
-        if not bool(re.match('^\+$',l3)):
-            raise(e)
-        yield l2
+    with open(fastq_file, 'r') as f:
+        while True:
+            line = f.readline()
+            if len(line) ==0 :
+                break
+            line2 = f.readline()
+            f.readline()
+            f.readline()
+            yield line2[:-1]
+
+
 
 def cut_kmer(read, kmer_size):
-    for i in range(len(read)-kmer_size):
+    for i in range(len(read)-kmer_size+1):
         yield read[i:i+kmer_size]
 
 
@@ -97,10 +95,11 @@ def build_kmer_dict(fastq_file, kmer_size):
                 dic[j] = 1
     return dic
 
-
 def build_graph(kmer_dict):
-    pass
-
+    graph = nx.DiGraph()
+    for key in kmer_dict.keys():
+        graph.add_edge(key[:-1],key[1:],weight=kmer_dict[key])
+    return graph
 
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
     pass
@@ -149,7 +148,9 @@ def main():
     """
     # Get arguments
     args = get_arguments()
-    c = build_kmer_dict(args.fastq_file,args.kmer_size)
-    print(c)
+    for i in read_fastq(args.fastq_file):
+        print(i)
+    #dic = build_kmer_dict(args.fastq_file,args.kmer_size)
+    #print(dic)
 if __name__ == '__main__':
     main()
