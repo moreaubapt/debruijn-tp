@@ -12,25 +12,26 @@
 #    http://www.gnu.org/licenses/gpl-3.0.html
 
 """Perform assembly based on debruijn graph."""
-
+import random
 import argparse
+import re
 import os
 import sys
 import networkx as nx
 import matplotlib
 from operator import itemgetter
-import random
+
 random.seed(9001)
 from random import randint
 import statistics
 
-__author__ = "Your Name"
+__author__ = "Moreau Baptiste"
 __copyright__ = "Universite Paris Diderot"
-__credits__ = ["Your Name"]
+__credits__ = ["Moreau Baptiste"]
 __license__ = "GPL"
 __version__ = "1.0.0"
-__maintainer__ = "Your Name"
-__email__ = "your@email.fr"
+__maintainer__ = "Moreau Baptiste"
+__email__ = "moreaubapt@eisti.eu"
 __status__ = "Developpement"
 
 def isfile(path):
@@ -66,15 +67,35 @@ def get_arguments():
 
 
 def read_fastq(fastq_file):
-    pass
-
+    #Read the sequences from a file and assert they are well formed otherwise raise an exception
+    with open(fastq_file, 'r') as inputfile:
+        l1 = inputfile.readline()
+        l2 = inputfile.readline()
+        l3 = inputfile.readline()
+        l4 = inputfile.readline()
+        e = Exception("Wrong file construction")
+        if not bool(re.match('^@',l1)):
+            raise(e)
+        if not bool(re.match('^[ACTG]*$',l2)):
+            raise(e)
+        if not bool(re.match('^\+$',l3)):
+            raise(e)
+        yield l2
 
 def cut_kmer(read, kmer_size):
-    pass
+    for i in range(len(read)-kmer_size):
+        yield read[i:i+kmer_size]
 
 
 def build_kmer_dict(fastq_file, kmer_size):
-    pass
+    dic = {}
+    for i in read_fastq(fastq_file):
+        for j in cut_kmer(i,kmer_size):
+            try:
+                dic[j] +=1
+            except KeyError:
+                dic[j] = 1
+    return dic
 
 
 def build_graph(kmer_dict):
@@ -88,7 +109,7 @@ def std(data):
     pass
 
 
-def select_best_path(graph, path_list, path_length, weight_avg_list, 
+def select_best_path(graph, path_list, path_length, weight_avg_list,
                      delete_entry_node=False, delete_sink_node=False):
     pass
 
@@ -128,6 +149,7 @@ def main():
     """
     # Get arguments
     args = get_arguments()
-
+    c = build_kmer_dict(args.fastq_file,args.kmer_size)
+    print(c)
 if __name__ == '__main__':
     main()
