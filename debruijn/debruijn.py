@@ -14,15 +14,15 @@
 """Perform assembly based on debruijn graph."""
 import random
 from random import randint
-import argparse
-import re
-import os
-import sys
-from operator import itemgetter
 random.seed(9001)
 import statistics
 import networkx as nx
 import matplotlib
+import argparse
+import os
+import sys
+from operator import itemgetter
+
 
 __author__ = "Moreau Baptiste"
 __copyright__ = "Universite Paris Diderot"
@@ -78,12 +78,9 @@ def read_fastq(fastq_file):
             f.readline()
             yield line2[:-1]
 
-
-
 def cut_kmer(read, kmer_size):
     for i in range(len(read)-kmer_size+1):
         yield read[i:i+kmer_size]
-
 
 def build_kmer_dict(fastq_file, kmer_size):
     dic = {}
@@ -128,16 +125,66 @@ def solve_out_tips(graph, ending_nodes):
     pass
 
 def get_starting_nodes(graph):
-    pass
+    starting_nodes = []
+    for n in graph.nodes():
+        a=0
+        for i,j in enumerate(graph.predecessors(n)):
+            a+=1
+        if a == 0:
+            starting_nodes.append(n)
+    return starting_nodes
 
 def get_sink_nodes(graph):
-    pass
+    sink_nodes = []
+    for n in graph.nodes():
+        a = 0
+        for i,j in enumerate(graph.successors(n)):
+            a+=1
+        if a == 0:
+            sink_nodes.append(n)
+    return sink_nodes
+
+def get_contig(graph, starting_node, ending):
+    c = starting_node
+    if starting_node == ending:
+        return starting_node
+    a = 0
+    for n in graph.successors(starting_node):
+        a+=1
+        #print(starting_node,ending,"get contig with starting",n)
+        r = get_contig(graph,n,ending)
+        if r != 'FALSE' :
+            c+=r[1:]
+            #print(starting_node,ending,c,"get contig with ending")
+            return c
+    if a == 0:
+        #print(starting_node,ending,"pas de successors")
+        return "FALSE"
+    else:
+        return 'FALSE'
 
 def get_contigs(graph, starting_nodes, ending_nodes):
-    pass
+    contigs = []
+    for sN in starting_nodes:
+        for eN in ending_nodes:
+            #print(sN,eN,"starting")
+            c = get_contig(graph,sN,eN)
+            #print(c)
+            if c != 'FALSE':
+                contigs.append((c,len(c)))
+    return contigs
 
 def save_contigs(contigs_list, output_file):
-    pass
+    def fill(text, width=80):
+        """Split text with a line return to respect fasta format"""
+        return os.linesep.join(text[i:i+width] for i in range(0, len(text), width))
+
+    with open(output_file,"w") as file:
+        for i, contig in enumerate(contigs_list):
+            seq, t = contig
+            file.write(">contig_{0} len={1}\n".format(i,t))
+            file.write(fill(seq+"\n"))
+
 
 #==============================================================
 # Main program
@@ -146,10 +193,14 @@ def main():
     """
     Main program function
     """
+    pass
     # Get arguments
-    args = get_arguments()
-    for i in read_fastq(args.fastq_file):
-        print(i)
+    #args = get_arguments()
+    #graph = nx.DiGraph()
+    #graph.add_edges_from([("TC", "CA"), ("AC", "CA"), ("CA", "AG"), ("AG", "GC"), ("GC", "CG"), ("CG", "GA"), ("GA", "AT"), ("GA", "AA")])
+    #contig_list = get_contigs(graph, ["TC", "AC"], ["AT" , "AA"])
+    #save_contigs(contig_list,"oui")
+    #print(contig_list)
     #dic = build_kmer_dict(args.fastq_file,args.kmer_size)
     #print(dic)
 if __name__ == '__main__':
