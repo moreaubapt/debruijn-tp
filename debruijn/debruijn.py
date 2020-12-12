@@ -67,7 +67,10 @@ def get_arguments():
 
 
 def read_fastq(fastq_file):
-    #Read the sequences from a file and assert they are well formed otherwise raise an exception
+    """Generator reading sequences contained in the file.
+      :Parameters:
+         fastq_file : Path to the file
+    """
     with open(fastq_file, 'r') as f:
         while True:
             line = f.readline()
@@ -79,10 +82,20 @@ def read_fastq(fastq_file):
             yield line2[:-1]
 
 def cut_kmer(read, kmer_size):
+    """Generator cuting kmer contained in the sequence.
+      :Parameters:
+         read : sequence
+         kmer_size : size of the kmer
+    """
     for i in range(len(read)-kmer_size+1):
         yield read[i:i+kmer_size]
 
 def build_kmer_dict(fastq_file, kmer_size):
+    """Create a kmer dictionnary based on the sequences of a file with the specified size.
+      :Parameters:
+         fastq_file : Path of the file
+         kmer_size : size of the kmer
+    """
     dic = {}
     for i in read_fastq(fastq_file):
         for j in cut_kmer(i,kmer_size):
@@ -93,6 +106,10 @@ def build_kmer_dict(fastq_file, kmer_size):
     return dic
 
 def build_graph(kmer_dict):
+    """Return the corresponding oriented graph of a kmer dictionnary.
+      :Parameters:
+         kmer_dict : kmer dictionnary
+    """
     graph = nx.DiGraph()
     for key in kmer_dict.keys():
         graph.add_edge(key[:-1],key[1:],weight=kmer_dict[key])
@@ -102,7 +119,7 @@ def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
     pass
 
 def std(data):
-    pass
+    return statistics.stdev(data)
 
 
 def select_best_path(graph, path_list, path_length, weight_avg_list,
@@ -125,6 +142,10 @@ def solve_out_tips(graph, ending_nodes):
     pass
 
 def get_starting_nodes(graph):
+    """Return nodes of the graph with no ancestor.
+      :Parameters:
+         graph : the graph
+    """
     starting_nodes = []
     for n in graph.nodes():
         a=0
@@ -135,6 +156,10 @@ def get_starting_nodes(graph):
     return starting_nodes
 
 def get_sink_nodes(graph):
+    """Return nodes of the graph with no successors.
+      :Parameters:
+         graph : the graph
+    """
     sink_nodes = []
     for n in graph.nodes():
         a = 0
@@ -145,6 +170,14 @@ def get_sink_nodes(graph):
     return sink_nodes
 
 def get_contig(graph, starting_node, ending):
+    """Return the contig of the graph for the specified starting node and ending node
+       or 'FALSE' if theree is no such contig.
+      :Parameters:
+         graph : the graph
+         starting_node : the node that will be used as start position in the graph to
+         find contig
+         ending : the node that will be used as end position in the graph to find contig
+    """
     c = starting_node
     if starting_node == ending:
         return starting_node
@@ -164,6 +197,15 @@ def get_contig(graph, starting_node, ending):
         return 'FALSE'
 
 def get_contigs(graph, starting_nodes, ending_nodes):
+    """Return the contigs of the graph as tuple formed as
+    (contig,len of the contig) for the specified starting nodes and ending nodes.
+      :Parameters:
+         graph : the graph
+         starting_node : the nodes that will be used as start position in
+         the graph to find contigs
+         ending_nodes : the nodes that will be used as end position in
+         the graph to find contigs
+    """
     contigs = []
     for sN in starting_nodes:
         for eN in ending_nodes:
@@ -175,6 +217,11 @@ def get_contigs(graph, starting_nodes, ending_nodes):
     return contigs
 
 def save_contigs(contigs_list, output_file):
+    """
+    :Parameters:
+         contigs_list : the contig list
+         output_file : Path of the file
+    """
     def fill(text, width=80):
         """Split text with a line return to respect fasta format"""
         return os.linesep.join(text[i:i+width] for i in range(0, len(text), width))
@@ -197,7 +244,8 @@ def main():
     # Get arguments
     #args = get_arguments()
     #graph = nx.DiGraph()
-    #graph.add_edges_from([("TC", "CA"), ("AC", "CA"), ("CA", "AG"), ("AG", "GC"), ("GC", "CG"), ("CG", "GA"), ("GA", "AT"), ("GA", "AA")])
+    #graph.add_edges_from([("TC", "CA"), ("AC", "CA"), ("CA", "AG"), ("AG", "GC"),
+    # ("GC", "CG"), ("CG", "GA"), ("GA", "AT"), ("GA", "AA")])
     #contig_list = get_contigs(graph, ["TC", "AC"], ["AT" , "AA"])
     #save_contigs(contig_list,"oui")
     #print(contig_list)
