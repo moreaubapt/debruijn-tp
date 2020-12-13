@@ -206,17 +206,23 @@ def get_bubble_paths(graph,starting_node, ending):
     def constructPaths(graph,starting_node,paths,valids):
         prt_paths=[]
         for path in paths:
-            j=0
-            for (a,n) in get_ancestors(graph,path[0]):
-                if j==0:
-                    path.insert(0,n)
-                else:
-                    prt_paths.append(path[1:].insert(0,n))
-                if n == starting_node:
-                    valids.append(path)
+            #print("path",path)
+            if path != None:
+
+                    #break
+                j=0
+                for (a,n) in get_ancestors(graph,path[0]):
+                    if j==0:
+                        path.insert(0,n)
+                    else:
+                        prt_paths.append(path[1:].insert(0,n))
+                    if n == starting_node:
+                        valids.append(path)
+                        paths.remove(path)
+                    j+=1
+                if j == 0:
                     paths.remove(path)
-                j+=1
-            if j == 0:
+            else:
                 paths.remove(path)
         paths = paths+prt_paths
         return (paths,valids)
@@ -401,14 +407,13 @@ def main():
     """
     pass
     # Get arguments
-    #args = get_arguments()
-    #graph = nx.DiGraph()
-    #graph.add_edges_from([("TC", "CA"), ("AC", "CA"), ("CA", "AG"), ("AG", "GC"),
-    # ("GC", "CG"), ("CG", "GA"), ("GA", "AT"), ("GA", "AA")])
-    #contig_list = get_contigs(graph, ["TC", "AC"], ["AT" , "AA"])
-    #save_contigs(contig_list,"oui")
-    #print(contig_list)
-    #dic = build_kmer_dict(args.fastq_file,args.kmer_size)
-    #print(dic)
+    args = get_arguments()
+    kmer_dict = build_kmer_dict(args.fastq_file,args.kmer_size)
+    graph = build_graph(kmer_dict)
+    graph = simplify_bubbles(graph)
+    #graph = solve_entry_tips(graph,get_starting_nodes(graph))
+    #graph = solve_out_tips(graph,get_sink_nodes(graph))
+    contig_list = get_contigs(graph,get_starting_nodes(graph),get_sink_nodes(graph))
+    save_contigs(contig_list,args.fastq_file)
 if __name__ == '__main__':
     main()
