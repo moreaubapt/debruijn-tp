@@ -261,9 +261,41 @@ def simplify_bubbles(graph):
     return graph
 
 
+def get_successor(graph,node):
+    a=0
+    if graph.has_node(node):
+        for n in graph.successors(node):
+            yield(a,n)
+            a+=1
+
 
 def solve_entry_tips(graph, starting_nodes):
-    pass
+    ancestor = next(get_successor(graph,starting_nodes[0]))
+    def asCommonSuccesor(graph,starting_nodes,ancestor):
+        future_succ = []
+        for node in starting_nodes:
+            successors = next(get_successor(graph,node))
+            future_succ.append(successors)
+            if successors == ancestor:
+                return True
+        else:
+            return future_succ
+    x = asCommonSuccesor(graph,starting_nodes,ancestor)
+    while x != True:
+        while x != []:
+             x = asCommonSuccesor(graph,x,ancestor)
+             if x == True:
+                 break
+        if x != True:
+            ancestor = next(get_successor(graph,starting_nodes[0]))
+            x = asCommonSuccesor(graph,starting_nodes,ancestor)
+    print(ancestor[1])
+    for node in starting_nodes:
+        print(get_bubble_paths(graph,node,ancestor[1]))
+
+
+
+
 
 def solve_out_tips(graph, ending_nodes):
     pass
