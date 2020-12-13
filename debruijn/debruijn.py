@@ -116,7 +116,34 @@ def build_graph(kmer_dict):
     return graph
 
 def remove_paths(graph, path_list, delete_entry_node, delete_sink_node):
-    pass
+    """qui prend un graphe et une liste de chemin,
+    la variable booléenne delete_entry_node pour indiquer si les noeuds d’entrée
+    seront supprimés et
+    la variable booléenne delete_sink_node pour indiquer si les noeuds de sortie
+    seront supprimés et retourne un graphe nettoyé des chemins indésirables."""
+    for path in path_list:
+        for i in range(len(path)-1):
+
+            try:
+                graph.remove_edge(path[i],path[i+1])
+                print("removing edge({},{})".format(path[i],path[i+1]))
+            except nx.exception.NetworkXError:
+                pass
+        if delete_entry_node:
+            graph.remove_node(path[0])
+        if delete_sink_node:
+            graph.remove_node(path[-1])
+        for k in path:
+            if graph.has_node(k):
+                a=0
+                for i,j in enumerate(graph.predecessors(k)):
+                    a+=1
+                for i,j in enumerate(graph.successors(k)):
+                    a+=1
+                if a == 0:
+                    graph.remove_node(k)
+    return graph
+
 
 def std(data):
     return statistics.stdev(data)
@@ -124,16 +151,116 @@ def std(data):
 
 def select_best_path(graph, path_list, path_length, weight_avg_list,
                      delete_entry_node=False, delete_sink_node=False):
-    pass
+    """prend un graphe, une liste de chemin, une liste donnant la longueur
+    de chaque chemin, une liste donnant le poids moyen de chaque chemin,
+    delete_entry_node pour indiquer si les noeuds d’entrée seront supprimés
+    et delete_sink_node pour indiquer si les noeuds de sortie seront supprimés
+     et retourne un graphe nettoyé des chemins indésirables.
+    Par défaut, delete_entry_node et delete_sink_node seront ici à False"""
+    best_weights=[0]
+    for i,weight in enumerate(weight_avg_list):
+        if i != best_weights[0] :
+            if weight > weight_avg_list[best_weights[0]]:
+                best_weights = best_weights[0:1]
+                best_weights[0] = i
+            if weight == weight_avg_list[best_weights[0]] and i != best_weights[0]:
+                best_weights.append(i)
+    best_length=[best_weights[0]]
+    for i in best_weights:
+        if i != best_length[0] :
+            if path_length[i] > path_length[best_length[0]]:
+                best_length = best_length[0:1]
+                best_length[0] = i
+            if path_length[i] == path_length[best_length[0]] and i != best_length[0]:
+                best_length.append(i)
+    best_path_index = best_length[random.randint(0,len(best_length)-1)]
+    path_list.pop(best_path_index)
+    return remove_paths(graph, path_list, delete_entry_node, delete_sink_node)
+
 
 def path_average_weight(graph, path):
-    pass
+    """Return the avergae weight of a path.
+      :Parameters:
+         graph : graph
+         path : path within the graph
+    """
+    data = []
+    for i in range(len(path)-1):
+        if graph.has_edge(path[i],path[i+1]) :
+            data.append(graph.get_edge_data(path[i],path[i+1])["weight"])
+    return statistics.mean(data)
+
+def get_ancestors(graph,node):
+    a=0
+    if graph.has_node(node):
+        for n in graph.predecessors(node):
+            yield(a,n)
+            a+=1
+
+def get_bubble_paths(graph,starting_node, ending):
+    paths=[]
+    valids=[]
+    for (a,n) in get_ancestors(graph,ending):
+        l = [n,ending]
+        paths.append(l)
+    def constructPaths(graph,starting_node,paths,valids):
+        prt_paths=[]
+        for path in paths:
+            j=0
+            for (a,n) in get_ancestors(graph,path[0]):
+                if j==0:
+                    path.insert(0,n)
+                else:
+                    prt_paths.append(path[1:].insert(0,n))
+                if n == starting_node:
+                    valids.append(path)
+                    paths.remove(path)
+                j+=1
+            if j == 0:
+                paths.remove(path)
+        paths = paths+prt_paths
+        return (paths,valids)
+
+    while len(paths) > 0:
+        (paths,valids) = constructPaths(graph,starting_node,paths,valids)
+    return valids
+
+
 
 def solve_bubble(graph, ancestor_node, descendant_node):
-    pass
+    """qui prend un graphe, un nœud ancêtre, un nœud descendant et
+    retourne un graph nettoyé de la bulle se trouvant
+     entre ces deux nœuds en utilisant les fonctions précédemment développées"""
+    paths = get_bubble_paths(graph, ancestor_node, descendant_node)
+    paths_length = []
+    paths_weight = []
+    for path in paths:
+        paths_length.append(len(path))
+        paths_weight.append(path_average_weight(graph,path))
+        print(path,len(path),path_average_weight(graph,path))
+
+    return select_best_path(graph,paths,paths_length,paths_weight)
 
 def simplify_bubbles(graph):
-    pass
+    nodes = list(graph.nodes)
+    def solver(graph,ancestor_from,ending):
+        for (a,starting_node) in get_ancestors(graph,ancestor_from):
+            paths = get_bubble_paths(graph,starting_node, ending)
+            if len(paths) > 1 :
+                return solve_bubble(graph,starting_node,ending)
+        return False
+    for i in range(len(nodes)):
+        for j in range(i,len(nodes)):
+            x = solver(graph,nodes[i],nodes[j])
+            y = x
+            while x != False:
+                y = x
+                x = solver(x,nodes[i],nodes[j])
+            if y != False:
+                graph = y
+    return graph
+
+
 
 def solve_entry_tips(graph, starting_nodes):
     pass
